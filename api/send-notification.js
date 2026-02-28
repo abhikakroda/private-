@@ -12,11 +12,16 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
 }
 
 // Initialize Firebase Admin SDK
-if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-    });
+try {
+    if (!admin.apps.length) {
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+        });
+    }
+} catch (error) {
+    console.error("Firebase Auth Error:", error);
 }
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -27,6 +32,14 @@ app.post('/api/send-notification', async (req, res) => {
 
     if (!title || !body) {
         return res.status(400).json({ error: 'Title and body are required' });
+    }
+
+    // Check if the initialization actually succeeded
+    if (!admin.apps.length) {
+        return res.status(500).json({
+            error: 'Backend Configuration Error',
+            details: 'Firebase Admin SDK failed to initialize. Check if the Vercel Environment Variable is properly formatted JSON.'
+        });
     }
 
     const message = {
@@ -47,7 +60,4 @@ app.post('/api/send-notification', async (req, res) => {
     }
 });
 
-const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`FCM API Server is running on http://localhost:${PORT}`);
-});
+module.exports = app;
