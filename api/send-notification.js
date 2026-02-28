@@ -1,14 +1,22 @@
-const express = require('express');
-const cors = require('cors');
-const admin = require('firebase-admin');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import admin from 'firebase-admin';
+import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+dotenv.config();
 
 let serviceAccount;
 
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 } else {
-    serviceAccount = require('../serviceAccountKey.json');
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const rawData = fs.readFileSync(path.join(__dirname, '../serviceAccountKey.json'), 'utf8');
+    serviceAccount = JSON.parse(rawData);
 }
 
 // Initialize Firebase Admin SDK
@@ -60,4 +68,4 @@ app.post('/api/send-notification', async (req, res) => {
     }
 });
 
-module.exports = app;
+export default app;
