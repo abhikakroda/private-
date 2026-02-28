@@ -5,10 +5,12 @@ function App() {
     const [title, setTitle] = useState('');
     const [body, setBody] = useState('');
     const [status, setStatus] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
 
     const sendNotification = async (e) => {
         e.preventDefault();
         setStatus('sending');
+        setErrorMessage('');
 
         try {
             const response = await fetch('/api/send-notification', {
@@ -24,14 +26,20 @@ function App() {
                 setTitle('');
                 setBody('');
             } else {
+                const errorData = await response.json().catch(() => null);
                 setStatus('error');
+                setErrorMessage(errorData?.details || errorData?.error || 'Unknown server error');
             }
         } catch (err) {
             console.error(err);
             setStatus('error');
+            setErrorMessage(err.message || 'Network error');
         }
 
-        setTimeout(() => setStatus(''), 3000);
+        setTimeout(() => {
+            setStatus('');
+            setErrorMessage('');
+        }, 5000);
     };
 
     return (
@@ -77,7 +85,7 @@ function App() {
                 </form>
 
                 {status === 'success' && <div className="toast success">Notification sent successfully!</div>}
-                {status === 'error' && <div className="toast error">Failed to send. Check server logs.</div>}
+                {status === 'error' && <div className="toast error">{errorMessage || 'Failed to send. Check server logs.'}</div>}
             </div>
         </div>
     );

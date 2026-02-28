@@ -9,25 +9,27 @@ import { fileURLToPath } from 'url';
 dotenv.config();
 
 let serviceAccount;
+let initError = null;
 
-if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-} else {
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const rawData = fs.readFileSync(path.join(__dirname, '../serviceAccountKey.json'), 'utf8');
-    serviceAccount = JSON.parse(rawData);
-}
-
-// Initialize Firebase Admin SDK
 try {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    } else {
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = path.dirname(__filename);
+        const rawData = fs.readFileSync(path.join(__dirname, '../serviceAccountKey.json'), 'utf8');
+        serviceAccount = JSON.parse(rawData);
+    }
+
+    // Initialize Firebase Admin SDK
     if (!admin.apps.length) {
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
         });
     }
 } catch (error) {
-    console.error("Firebase Auth Error:", error);
+    console.error("Firebase Initialization Error:", error);
+    initError = error.message;
 }
 
 const app = express();
@@ -43,10 +45,10 @@ app.post('/api/send-notification', async (req, res) => {
     }
 
     // Check if the initialization actually succeeded
-    if (!admin.apps.length) {
+    if (initError || !admin.apps.length) {
         return res.status(500).json({
             error: 'Backend Configuration Error',
-            details: 'Firebase Admin SDK failed to initialize. Check if the Vercel Environment Variable is properly formatted JSON.'
+            details: `Firebase Admin SDK failed to initialize. Error: ${initError || 'Unknown formatting issue in Environment Variable JSON.'}`
         });
     }
 
